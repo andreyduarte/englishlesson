@@ -5,48 +5,35 @@ import { LessonView } from './components/LessonView';
 import { LessonList } from './components/LessonList';
 import { StudentList } from './components/StudentList';
 import { CreateStudent } from './components/CreateStudent';
+import { Settings } from './components/Settings';
 import { SavedLesson, Student } from './types';
-import { GraduationCap, Users, BookOpen } from 'lucide-react';
+import { storageService } from './services/storageService';
+import { GraduationCap, Users, BookOpen, Settings as SettingsIcon } from 'lucide-react';
 
 const App: React.FC = () => {
   const [lessons, setLessons] = useState<SavedLesson[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [loaded, setLoaded] = useState(false);
 
-  // Load data from local storage
+  // Initial Load via Service
   useEffect(() => {
-    const savedLessons = localStorage.getItem('linguaGenLessons');
-    const savedStudents = localStorage.getItem('linguaGenStudents');
-    
-    if (savedLessons) {
-      try {
-        setLessons(JSON.parse(savedLessons));
-      } catch (e) {
-        console.error("Failed to parse lessons", e);
-      }
-    }
-
-    if (savedStudents) {
-       try {
-        setStudents(JSON.parse(savedStudents));
-       } catch (e) {
-         console.error("Failed to parse students", e);
-       }
-    }
-
+    const loadedLessons = storageService.loadLessons();
+    const loadedStudents = storageService.loadStudents();
+    setLessons(loadedLessons);
+    setStudents(loadedStudents);
     setLoaded(true);
   }, []);
 
-  // Save data to local storage
+  // Persistence Effects using Service
   useEffect(() => {
     if (loaded) {
-      localStorage.setItem('linguaGenLessons', JSON.stringify(lessons));
+      storageService.saveLessons(lessons);
     }
   }, [lessons, loaded]);
 
   useEffect(() => {
     if (loaded) {
-      localStorage.setItem('linguaGenStudents', JSON.stringify(students));
+      storageService.saveStudents(students);
     }
   }, [students, loaded]);
 
@@ -70,7 +57,7 @@ const App: React.FC = () => {
 
   const handleUpdateStudent = (updatedStudent: Student) => {
     setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
-    // Update profile snapshots in lessons for data consistency (optional but nice)
+    // Update profile snapshots in lessons for data consistency
     setLessons(prev => prev.map(l => l.studentId === updatedStudent.id ? { ...l, profileSnapshot: updatedStudent.name } : l));
   };
 
@@ -78,6 +65,17 @@ const App: React.FC = () => {
     if (window.confirm("Are you sure you want to delete this student? Associated lessons will maintain their history but be unlinked.")) {
       setStudents(prev => prev.filter(s => s.id !== id));
     }
+  };
+
+  // Settings Handlers
+  const handleImportData = (newStudents: Student[], newLessons: SavedLesson[]) => {
+    setStudents(newStudents);
+    setLessons(newLessons);
+  };
+
+  const handleClearData = () => {
+    setStudents([]);
+    setLessons([]);
   };
 
   if (!loaded) return null;
@@ -96,14 +94,17 @@ const App: React.FC = () => {
                 Lingua<span className="text-indigo-600">Gen</span> AI
               </span>
             </Link>
-            <nav className="flex gap-6">
+            <nav className="flex gap-6 items-center">
                <Link to="/students" className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-indigo-600 transition">
-                <Users size={16} /> Students
+                <Users size={16} /> <span className="hidden sm:inline">Students</span>
               </Link>
               <Link to="/" className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-indigo-600 transition">
-                <BookOpen size={16} /> All Lessons
+                <BookOpen size={16} /> <span className="hidden sm:inline">Lessons</span>
               </Link>
-              <Link to="/create" className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition">
+              <Link to="/settings" className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-indigo-600 transition" title="Data Settings">
+                <SettingsIcon size={18} />
+              </Link>
+              <Link to="/create" className="text-sm font-medium bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-md hover:bg-indigo-100 transition">
                 + New Lesson
               </Link>
             </nav>
@@ -131,7 +132,7 @@ const App: React.FC = () => {
             />
             <Route 
               path="/create" 
-              element={<CreateLesson students={students} lessons={lessons} onSave={handleSaveLesson} />} 
+              element={<CreateLesson students={students} lessons={lessons} onSave={handleSaveLesson} onUpdate={handleUpdateLesson} />} 
             />
             <Route 
               path="/lesson/:id" 
@@ -140,6 +141,10 @@ const App: React.FC = () => {
             <Route 
               path="/lesson/:id/edit" 
               element={<CreateLesson students={students} lessons={lessons} onSave={handleSaveLesson} onUpdate={handleUpdateLesson} />} 
+            />
+            <Route 
+              path="/settings" 
+              element={<Settings students={students} lessons={lessons} onImport={handleImportData} onClear={handleClearData} />} 
             />
           </Routes>
         </main>
