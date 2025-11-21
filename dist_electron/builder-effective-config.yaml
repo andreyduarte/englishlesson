@@ -1,0 +1,15 @@
+directories:
+  output: dist_electron
+  buildResources: build
+appId: com.linguagen.app
+productName: LinguaGen AI
+files:
+  - filter:
+      - dist/**/*
+      - electron/**/*
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+electronVersion: 39.2.3

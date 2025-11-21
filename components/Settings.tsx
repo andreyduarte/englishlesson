@@ -1,7 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { SavedLesson, Student } from '../types';
 import { storageService } from '../services/storageService';
-import { Download, Upload, Trash2, Database, Check, AlertTriangle, RotateCcw } from 'lucide-react';
+import { Download, Upload, Trash2, Database, Check, AlertTriangle, RotateCcw, Key } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface SettingsProps {
@@ -14,6 +14,21 @@ interface SettingsProps {
 export const Settings: React.FC<SettingsProps> = ({ students, lessons, onImport, onClear }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [apiKey, setApiKey] = useState('');
+  const [showKey, setShowKey] = useState(false);
+
+  useEffect(() => {
+    const savedKey = storageService.loadApiKey();
+    if (savedKey) setApiKey(savedKey);
+  }, []);
+
+  const handleSaveKey = () => {
+    if (apiKey.trim()) {
+      storageService.saveApiKey(apiKey.trim());
+      setMessage({ type: 'success', text: 'API Key saved successfully.' });
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
 
   const handleExport = () => {
     storageService.exportData(lessons, students);
@@ -31,7 +46,7 @@ export const Settings: React.FC<SettingsProps> = ({ students, lessons, onImport,
 
     try {
       const { students: newStudents, lessons: newLessons } = await storageService.importData(file);
-      
+
       if (window.confirm(`Found ${newStudents.length} students and ${newLessons.length} lessons in backup. This will OVERWRITE your current data. Continue?`)) {
         onImport(newStudents, newLessons);
         setMessage({ type: 'success', text: 'Data restored successfully.' });
@@ -39,7 +54,7 @@ export const Settings: React.FC<SettingsProps> = ({ students, lessons, onImport,
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to import data. Invalid file format.' });
     }
-    
+
     // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
     setTimeout(() => setMessage(null), 4000);
@@ -58,19 +73,57 @@ export const Settings: React.FC<SettingsProps> = ({ students, lessons, onImport,
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
         <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-          <Database className="text-indigo-600" /> Data Management
+          <Database className="text-indigo-600" /> Settings
         </h2>
-        <p className="text-gray-500 mt-1">Manage your local data, create backups, or restore from a file.</p>
+        <p className="text-gray-500 mt-1">Manage your API keys and local data.</p>
       </div>
 
       {message && (
-        <div className={`p-4 rounded-lg flex items-center gap-2 ${
-          message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
-        }`}>
+        <div className={`p-4 rounded-lg flex items-center gap-2 ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
+          }`}>
           {message.type === 'success' ? <Check size={20} /> : <AlertTriangle size={20} />}
           {message.text}
         </div>
       )}
+
+      {/* API Key Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-6 border-b border-gray-100">
+          <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
+            <Key size={20} className="text-indigo-600" /> Gemini API Configuration
+          </h3>
+          <p className="text-sm text-gray-500">Enter your Google Gemini API Key to enable AI lesson generation.</p>
+        </div>
+        <div className="p-6">
+          <div className="flex gap-2">
+            <div className="relative flex-grow">
+              <input
+                type={showKey ? "text" : "password"}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Enter your Gemini API Key"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+              />
+              <button
+                type="button"
+                onClick={() => setShowKey(!showKey)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-medium"
+              >
+                {showKey ? "HIDE" : "SHOW"}
+              </button>
+            </div>
+            <button
+              onClick={handleSaveKey}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition"
+            >
+              Save Key
+            </button>
+          </div>
+          <p className="text-xs text-gray-400 mt-2">
+            Your key is stored locally in your browser and never sent to our servers.
+          </p>
+        </div>
+      </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
@@ -88,7 +141,7 @@ export const Settings: React.FC<SettingsProps> = ({ students, lessons, onImport,
               <h4 className="font-bold text-indigo-900">Export Backup</h4>
               <p className="text-xs text-indigo-700 mt-1">Download JSON file</p>
             </div>
-            <button 
+            <button
               onClick={handleExport}
               className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium w-full transition"
             >
@@ -105,18 +158,18 @@ export const Settings: React.FC<SettingsProps> = ({ students, lessons, onImport,
               <h4 className="font-bold text-emerald-900">Restore Backup</h4>
               <p className="text-xs text-emerald-700 mt-1">Upload JSON file</p>
             </div>
-            <button 
+            <button
               onClick={handleImportClick}
               className="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium w-full transition"
             >
               Restore Data
             </button>
-            <input 
-              type="file" 
-              accept=".json" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              className="hidden" 
+            <input
+              type="file"
+              accept=".json"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
             />
           </div>
         </div>
@@ -124,28 +177,28 @@ export const Settings: React.FC<SettingsProps> = ({ students, lessons, onImport,
 
       <div className="bg-white rounded-xl shadow-sm border border-red-100 overflow-hidden">
         <div className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-           <div>
-             <h3 className="text-lg font-bold text-red-700 flex items-center gap-2">
-               <AlertTriangle size={20} /> Danger Zone
-             </h3>
-             <p className="text-sm text-red-600/80 mt-1">
-               Permanently delete all local data. This action cannot be undone.
-             </p>
-           </div>
-           <button 
-             onClick={handleClear}
-             className="bg-white border border-red-200 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition whitespace-nowrap"
-           >
-             <Trash2 size={16} /> Clear All Data
-           </button>
+          <div>
+            <h3 className="text-lg font-bold text-red-700 flex items-center gap-2">
+              <AlertTriangle size={20} /> Danger Zone
+            </h3>
+            <p className="text-sm text-red-600/80 mt-1">
+              Permanently delete all local data. This action cannot be undone.
+            </p>
+          </div>
+          <button
+            onClick={handleClear}
+            className="bg-white border border-red-200 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition whitespace-nowrap"
+          >
+            <Trash2 size={16} /> Clear All Data
+          </button>
         </div>
       </div>
-      
-       <div className="text-center">
-          <Link to="/" className="text-gray-500 hover:text-gray-800 text-sm flex items-center justify-center gap-1">
-             <RotateCcw size={14} /> Return to Dashboard
-          </Link>
-       </div>
+
+      <div className="text-center">
+        <Link to="/" className="text-gray-500 hover:text-gray-800 text-sm flex items-center justify-center gap-1">
+          <RotateCcw size={14} /> Return to Dashboard
+        </Link>
+      </div>
     </div>
   );
 };

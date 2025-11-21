@@ -1,24 +1,40 @@
 {
-  "name": "linguagen-ai",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react-dom": "^19.2.0",
-    "react-router-dom": "^7.9.6",
-    "react": "^19.2.0",
-    "@google/genai": "^1.30.0",
-    "lucide-react": "^0.554.0"
-  },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
-  }
+    "name": "linguagen-ai",
+    "private": true,
+    "version": "1.0.0",
+    "author": "LinguaGen Team",
+    "description": "Personalized ESL Curriculum Generator",
+    "type": "module",
+    "main": "electron/main.cjs",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "electron:dev": "concurrently \"npm run dev\" \"wait-on tcp:3000 && electron .\"",
+        "package": "electron-packager . LinguaGenAI --platform=win32 --arch=x64 --out=release --overwrite",
+        "dist": "npm run build && npm run package"
+    },
+    "dependencies": {
+        "@google/genai": "^1.30.0",
+        "lucide-react": "^0.554.0",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+        "react-router-dom": "^7.9.6"
+    },
+    "devDependencies": {
+        "@tailwindcss/postcss": "^4.1.17",
+        "@types/node": "^22.14.0",
+        "@vitejs/plugin-react": "^5.0.0",
+        "autoprefixer": "^10.4.22",
+        "concurrently": "^9.2.1",
+        "electron": "^39.2.3",
+        "electron-builder": "^26.0.12",
+        "electron-packager": "^17.1.2",
+        "electron-squirrel-startup": "^1.0.1",
+        "postcss": "^8.5.6",
+        "tailwindcss": "^4.1.17",
+        "typescript": "~5.8.2",
+        "vite": "^6.2.0",
+        "wait-on": "^9.0.3"
+    }
 }

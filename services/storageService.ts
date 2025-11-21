@@ -2,7 +2,8 @@ import { SavedLesson, Student } from "../types";
 
 const STORAGE_KEYS = {
   LESSONS: 'linguaGenLessons',
-  STUDENTS: 'linguaGenStudents'
+  STUDENTS: 'linguaGenStudents',
+  API_KEY: 'linguaGenApiKey'
 };
 
 export const storageService = {
@@ -54,7 +55,7 @@ export const storageService = {
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    
+
     const a = document.createElement('a');
     a.href = url;
     a.download = `linguagen-backup-${new Date().toISOString().split('T')[0]}.json`;
@@ -68,12 +69,12 @@ export const storageService = {
   importData: async (file: File): Promise<{ lessons: SavedLesson[], students: Student[] }> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         try {
           const text = e.target?.result as string;
           const data = JSON.parse(text);
-          
+
           // Basic validation
           if (!Array.isArray(data.students) || !Array.isArray(data.lessons)) {
             throw new Error("Invalid backup file format.");
@@ -96,5 +97,13 @@ export const storageService = {
   clearAllData: () => {
     localStorage.removeItem(STORAGE_KEYS.LESSONS);
     localStorage.removeItem(STORAGE_KEYS.STUDENTS);
+  },
+
+  saveApiKey: (key: string) => {
+    localStorage.setItem(STORAGE_KEYS.API_KEY, key);
+  },
+
+  loadApiKey: (): string | null => {
+    return localStorage.getItem(STORAGE_KEYS.API_KEY);
   }
 };

@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { Lesson, Student } from "../types";
+import { storageService } from "./storageService";
 
 // Define the schema using the Type enum strictly as requested
 const lessonSchema: Schema = {
@@ -217,11 +218,12 @@ You are an expert ESL Curriculum Developer specializing in the Audio-Lingual met
 `;
 
 export const generateLesson = async (topic: string, student: Student, previousTopics: string[]): Promise<Lesson> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key not found");
+  const apiKey = storageService.loadApiKey();
+  if (!apiKey) {
+    throw new Error("API Key not found. Please configure it in Settings.");
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   const profileDescription = `
     **STUDENT PROFILE**:
@@ -236,7 +238,7 @@ export const generateLesson = async (topic: string, student: Student, previousTo
       * Writing: ${student.skills.writing}/5
   `;
 
-  const contextDescription = previousTopics.length > 0 
+  const contextDescription = previousTopics.length > 0
     ? `**HISTORY (Last ${previousTopics.length} lessons)**: The student has already studied: [${previousTopics.join(', ')}]. DO NOT repeat these specific lessons, but build upon them.`
     : `**HISTORY**: This is the very first lesson for this student. Start fresh.`;
 
@@ -271,11 +273,12 @@ export const generateLesson = async (topic: string, student: Student, previousTo
 };
 
 export const refineLesson = async (currentLesson: Lesson, instruction: string): Promise<Lesson> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key not found");
+  const apiKey = storageService.loadApiKey();
+  if (!apiKey) {
+    throw new Error("API Key not found. Please configure it in Settings.");
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
     **TASK**: Edit and Refine an existing English Lesson based on user feedback.
