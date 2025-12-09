@@ -279,7 +279,13 @@ export const CreateLesson: React.FC<CreateLessonProps> = ({ students, lessons, o
 
       {/* Review Content */}
       <div className="bg-white p-6 border-x border-b border-gray-200 min-h-screen">
-        {draftLesson && <LessonContent data={draftLesson} viewMode={viewMode} />}
+        {draftLesson && (
+          <LessonContent
+            data={draftLesson}
+            viewMode={viewMode}
+            onLessonChange={setDraftLesson}
+          />
+        )}
       </div>
 
       {/* Fixed Footer Action Bar */}
