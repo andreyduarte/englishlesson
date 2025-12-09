@@ -9,6 +9,7 @@ import { Settings } from './components/Settings';
 import { SavedLesson, Student } from './types';
 import { storageService } from './services/storageService';
 import { GraduationCap, Users, BookOpen, Settings as SettingsIcon } from 'lucide-react';
+import UpdateNotification from './components/UpdateNotification';
 
 const App: React.FC = () => {
   const [lessons, setLessons] = useState<SavedLesson[]>([]);
@@ -83,6 +84,7 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className="min-h-screen flex flex-col bg-slate-50">
+        <UpdateNotification />
         {/* Navigation */}
         <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -95,7 +97,7 @@ const App: React.FC = () => {
               </span>
             </Link>
             <nav className="flex gap-6 items-center">
-               <Link to="/students" className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-indigo-600 transition">
+              <Link to="/students" className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-indigo-600 transition">
                 <Users size={16} /> <span className="hidden sm:inline">Students</span>
               </Link>
               <Link to="/" className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-indigo-600 transition">
@@ -114,37 +116,37 @@ const App: React.FC = () => {
         {/* Main Content */}
         <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
           <Routes>
-            <Route 
-              path="/" 
-              element={<LessonList lessons={lessons} onDelete={handleDeleteLesson} />} 
+            <Route
+              path="/"
+              element={<LessonList lessons={lessons} onDelete={handleDeleteLesson} />}
             />
-            <Route 
-              path="/students" 
-              element={<StudentList students={students} onDelete={handleDeleteStudent} />} 
+            <Route
+              path="/students"
+              element={<StudentList students={students} onDelete={handleDeleteStudent} />}
             />
-            <Route 
-              path="/students/new" 
-              element={<CreateStudent students={students} onSave={handleSaveStudent} onUpdate={handleUpdateStudent} />} 
+            <Route
+              path="/students/new"
+              element={<CreateStudent students={students} onSave={handleSaveStudent} onUpdate={handleUpdateStudent} />}
             />
-            <Route 
-              path="/students/edit/:id" 
-              element={<CreateStudent students={students} onSave={handleSaveStudent} onUpdate={handleUpdateStudent} />} 
+            <Route
+              path="/students/edit/:id"
+              element={<CreateStudent students={students} onSave={handleSaveStudent} onUpdate={handleUpdateStudent} />}
             />
-            <Route 
-              path="/create" 
-              element={<CreateLesson students={students} lessons={lessons} onSave={handleSaveLesson} onUpdate={handleUpdateLesson} />} 
+            <Route
+              path="/create"
+              element={<CreateLesson students={students} lessons={lessons} onSave={handleSaveLesson} onUpdate={handleUpdateLesson} />}
             />
-            <Route 
-              path="/lesson/:id" 
-              element={<LessonView lessons={lessons} />} 
+            <Route
+              path="/lesson/:id"
+              element={<LessonView lessons={lessons} />}
             />
-            <Route 
-              path="/lesson/:id/edit" 
-              element={<CreateLesson students={students} lessons={lessons} onSave={handleSaveLesson} onUpdate={handleUpdateLesson} />} 
+            <Route
+              path="/lesson/:id/edit"
+              element={<CreateLesson students={students} lessons={lessons} onSave={handleSaveLesson} onUpdate={handleUpdateLesson} />}
             />
-            <Route 
-              path="/settings" 
-              element={<Settings students={students} lessons={lessons} onImport={handleImportData} onClear={handleClearData} />} 
+            <Route
+              path="/settings"
+              element={<Settings students={students} lessons={lessons} onImport={handleImportData} onClear={handleClearData} />}
             />
           </Routes>
         </main>

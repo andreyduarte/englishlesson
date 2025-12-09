@@ -101,3 +101,12 @@ export interface SavedLesson {
   createdAt: string;
   data: Lesson;
 }
+
+declare global {
+  interface Window {
+    electronAPI: {
+      onUpdateStatus: (callback: (status: any) => void) => void;
+      restartApp: () => Promise<void>;
+    };
+  }
+}

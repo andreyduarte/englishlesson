@@ -11,11 +11,13 @@
         "build": "vite build",
         "preview": "vite preview",
         "electron:dev": "concurrently \"npm run dev\" \"wait-on tcp:3000 && electron .\"",
-        "package": "electron-packager . LinguaGenAI --platform=win32 --arch=x64 --out=release --overwrite",
-        "dist": "npm run build && npm run package"
+        "package": "electron-builder",
+        "dist": "npm run build && electron-builder",
+        "publish": "npm run build && electron-builder --publish always"
     },
     "dependencies": {
         "@google/genai": "^1.30.0",
+        "electron-updater": "^6.3.9",
         "lucide-react": "^0.554.0",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
@@ -36,5 +38,30 @@
         "typescript": "~5.8.2",
         "vite": "^6.2.0",
         "wait-on": "^9.0.3"
+    },
+    "build": {
+        "appId": "com.linguagen.app",
+        "productName": "LinguaGenAI",
+        "directories": {
+            "output": "release"
+        },
+        "files": [
+            "dist/**/*",
+            "electron/**/*",
+            "package.json"
+        ],
+        "win": {
+            "target": "nsis"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "deleteAppDataOnUninstall": true
+        },
+        "publish": {
+            "provider": "github",
+            "owner": "andreyduarte",
+            "repo": "englishlesson"
+        }
     }
 }
