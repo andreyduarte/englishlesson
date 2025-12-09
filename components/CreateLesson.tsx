@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link, useParams } from 'react-router-dom';
-import { generateLesson, refineLesson } from '../services/geminiService';
+import { generateLesson, refineLesson, ChatMessage } from '../services/geminiService';
 import { SavedLesson, Student, Lesson } from '../types';
 import { Loader2, Sparkles, BookOpen, User, AlertCircle, Send, Check, XCircle } from 'lucide-react';
 import { LessonContent } from './LessonContent';
@@ -31,6 +31,7 @@ export const CreateLesson: React.FC<CreateLessonProps> = ({ students, lessons, o
   const [refinementInstruction, setRefinementInstruction] = useState('');
   const [isRefining, setIsRefining] = useState(false);
   const [viewMode, setViewMode] = useState<'student' | 'teacher'>('student');
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
 
   // --- Effects ---
   useEffect(() => {
@@ -53,6 +54,7 @@ export const CreateLesson: React.FC<CreateLessonProps> = ({ students, lessons, o
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setChatHistory([]);
 
     const student = students.find(s => s.id === selectedStudentId);
 
@@ -83,12 +85,22 @@ export const CreateLesson: React.FC<CreateLessonProps> = ({ students, lessons, o
   const handleRefine = async () => {
     if (!draftLesson || !refinementInstruction.trim()) return;
 
+    const userMsg: ChatMessage = { role: 'user', text: refinementInstruction };
+    const newHistory = [...chatHistory, userMsg];
+
     setIsRefining(true);
     setError(null);
+
+    // Optimistically update history
+    setChatHistory(newHistory);
+    setRefinementInstruction('');
+
     try {
-      const updatedLesson = await refineLesson(draftLesson, refinementInstruction);
+      const { lesson: updatedLesson, explanation } = await refineLesson(draftLesson, refinementInstruction, newHistory);
       setDraftLesson(updatedLesson);
-      setRefinementInstruction(''); // Clear input after success
+
+      const assistantMsg: ChatMessage = { role: 'model', text: explanation };
+      setChatHistory([...newHistory, assistantMsg]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to refine lesson.");
     } finally {
@@ -293,36 +305,56 @@ export const CreateLesson: React.FC<CreateLessonProps> = ({ students, lessons, o
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
 
           {/* Refine Input */}
-          <div className="flex-grow w-full md:w-auto flex gap-2">
-            <div className="flex-grow relative">
-              <textarea
-                value={refinementInstruction}
-                onChange={(e) => setRefinementInstruction(e.target.value)}
-                placeholder="Request changes (e.g., 'Make the verbs simpler', 'Focus on software words')..."
-                className="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm resize-none h-12"
-              />
+          <div className="flex-grow w-full md:w-auto flex flex-col gap-2">
+            <div className="max-h-60 overflow-y-auto mb-4 space-y-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
+              {chatHistory.length === 0 && (
+                <p className="text-xs text-gray-400 text-center italic">No refinement history yet.</p>
+              )}
+              {chatHistory.map((msg, idx) => (
+                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] p-3 rounded-lg text-sm ${msg.role === 'user'
+                      ? 'bg-indigo-100 text-indigo-900 rounded-br-none'
+                      : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none shadow-sm'
+                    }`}>
+                    <span className="block text-[10px] uppercase font-bold mb-1 opacity-70">
+                      {msg.role === 'user' ? 'You' : 'Assistant'}
+                    </span>
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
             </div>
-            <button
-              onClick={handleRefine}
-              disabled={isRefining || !refinementInstruction.trim()}
-              className="bg-gray-100 text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 px-4 rounded-lg font-medium text-sm flex items-center gap-2 border border-gray-200 disabled:opacity-50 transition"
-            >
-              {isRefining ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
-              Refine
-            </button>
+            <div className="flex gap-2">
+              <div className="flex-grow relative">
+                <textarea
+                  value={refinementInstruction}
+                  onChange={(e) => setRefinementInstruction(e.target.value)}
+                  placeholder="Request changes (e.g., 'Make the verbs simpler', 'Focus on software words')..."
+                  className="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm resize-none h-12"
+                />
+              </div>
+              <button
+                onClick={handleRefine}
+                disabled={isRefining || !refinementInstruction.trim()}
+                className="bg-gray-100 text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 px-4 rounded-lg font-medium text-sm flex items-center gap-2 border border-gray-200 disabled:opacity-50 transition"
+              >
+                {isRefining ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
+                Refine
+              </button>
+            </div>
           </div>
 
           {/* Final Actions */}
-          <div className="flex gap-3 w-full md:w-auto justify-end">
+          <div className="flex gap-3 w-full md:w-auto justify-end items-end">
             <button
               onClick={handleCancel}
-              className="text-gray-500 hover:text-red-600 px-4 py-2 font-medium text-sm flex items-center gap-1"
+              className="text-gray-500 hover:text-red-600 px-4 py-2 font-medium text-sm flex items-center gap-1 h-12"
             >
               <XCircle size={18} /> Cancel
             </button>
             <button
               onClick={handleApprove}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold shadow-lg hover:shadow-green-200 flex items-center gap-2 transition transform active:scale-95"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold shadow-lg hover:shadow-green-200 flex items-center gap-2 transition transform active:scale-95 h-12"
             >
               <Check size={18} /> Approved!
             </button>

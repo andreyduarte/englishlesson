@@ -1,7 +1,7 @@
 {
     "name": "linguagen-ai",
     "private": true,
-    "version": "1.0.0",
+    "version": "1.0.1",
     "author": "LinguaGen Team",
     "description": "Personalized ESL Curriculum Generator",
     "releaseType": "release",

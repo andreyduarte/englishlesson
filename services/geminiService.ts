@@ -272,7 +272,26 @@ export const generateLesson = async (topic: string, student: Student, previousTo
   return JSON.parse(response.text) as Lesson;
 };
 
-export const refineLesson = async (currentLesson: Lesson, instruction: string): Promise<Lesson> => {
+const refineSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    lesson: lessonSchema,
+    explanation: { type: Type.STRING, description: "A brief explanation of the changes made to the lesson based on the user's request." },
+  },
+  required: ["lesson", "explanation"],
+};
+
+export interface RefineResponse {
+  lesson: Lesson;
+  explanation: string;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
+}
+
+export const refineLesson = async (currentLesson: Lesson, instruction: string, history: ChatMessage[] = []): Promise<RefineResponse> => {
   const apiKey = storageService.loadApiKey();
   if (!apiKey) {
     throw new Error("API Key not found. Please configure it in Settings.");
@@ -280,19 +299,25 @@ export const refineLesson = async (currentLesson: Lesson, instruction: string): 
 
   const ai = new GoogleGenAI({ apiKey });
 
+  const historyText = history.map(msg => `${msg.role === 'user' ? 'USER' : 'ASSISTANT'}: ${msg.text}`).join('\n');
+
   const prompt = `
     **TASK**: Edit and Refine an existing English Lesson based on user feedback.
 
     **CURRENT LESSON JSON**:
     ${JSON.stringify(currentLesson)}
 
+    **CONVERSATION HISTORY**:
+    ${historyText}
+
     **USER FEEDBACK / REQUESTED CHANGES**:
     "${instruction}"
 
     **INSTRUCTION**: 
-    1. Analyze the user's request.
+    1. Analyze the user's request, considering the conversation history for context (e.g., "undo that", "make it harder").
     2. Modify the JSON content to strictly satisfy the request while maintaining the original format and pedagogical quality.
-    3. Return the FULL valid JSON object.
+    3. Provide a brief explanation of what you changed.
+    4. Return a JSON object with "lesson" (the full modified lesson) and "explanation" (your explanation).
   `;
 
   const response = await ai.models.generateContent({
@@ -301,8 +326,8 @@ export const refineLesson = async (currentLesson: Lesson, instruction: string): 
     config: {
       systemInstruction: "You are a rigid JSON editor. You only modify the specific parts requested by the user, or adjust the difficulty/tone as requested. Maintain the schema perfectly.",
       responseMimeType: "application/json",
-      responseSchema: lessonSchema,
-      temperature: 0.4, // Lower temperature for editing to stick closer to original structure
+      responseSchema: refineSchema,
+      temperature: 0.4,
     },
   });
 
@@ -310,5 +335,5 @@ export const refineLesson = async (currentLesson: Lesson, instruction: string): 
     throw new Error("No content generated during refinement");
   }
 
-  return JSON.parse(response.text) as Lesson;
+  return JSON.parse(response.text) as RefineResponse;
 };
