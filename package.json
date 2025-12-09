@@ -4,6 +4,11 @@
     "version": "1.0.0",
     "author": "LinguaGen Team",
     "description": "Personalized ESL Curriculum Generator",
+    "releaseType": "release",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/andreyduarte/englishlesson.git"
+    },
     "type": "module",
     "main": "electron/main.cjs",
     "scripts": {
